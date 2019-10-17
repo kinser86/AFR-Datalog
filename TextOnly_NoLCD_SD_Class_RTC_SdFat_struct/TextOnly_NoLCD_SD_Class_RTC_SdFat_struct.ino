@@ -3,22 +3,24 @@
  */
 
 // Libraries
-//#include <SD.h>
 #include <SdFat.h>
 #include <RTClib.h>
 
-RTC_Millis rtc;
+//RTC_Millis rtc;
+RTC_PCF8523 rtc;
+
 SdFat SD;
 
 // Declare Variables
 struct sample{
+  String name;
   const int pin;      // Input pin
   unsigned int raw;   // Raw value
   float value;        // Calculated value
 };
 
-sample TPS = {2, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
-sample AFR = {3, 0, 14.7};    // Voltage range 0.0 - 5.0 VDC
+sample TPS = {"TPS", 2, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
+sample AFR = {"AFR", 3, 0, 14.7};    // Voltage range 0.0 - 5.0 VDC
 
 const int PIN_SWITCH = 7;
 const int PIN_READ =  8;
@@ -40,21 +42,28 @@ File dataFile;    // SD Card
 
 void setup() {
   Serial.begin(57600);   // Initiate serial
-  Serial.println("Initializing SD card...");
+  delay(100);
   pinMode(PIN_SWITCH, INPUT_PULLUP);
   pinMode(PIN_RECORD, OUTPUT);
   pinMode(PIN_READ, OUTPUT);
   pinMode(PIN_SD, OUTPUT);
-  
-  rtc.begin(DateTime(F(__DATE__), F(__TIME__)));
-
-  // See if the card is present and can be initialized:
+  // Start and adjust RTC
+  Serial.print("Starting RTC...");
+  rtc.begin();
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  // set date time callback function
+  SdFile::dateTimeCallback(dateTime);
+  Serial.println("RTC done");
+  // Start SD Card
+  Serial.print("Initializing SD card...");
   if (!SD.begin(PIN_SD)) {
     Serial.println("Card failed, or not present");
     return;
   }
-  Serial.print("initialization done.");
-  Serial.println("Time(ms), TPS, AFR");   // Header for CSV file
+  Serial.println("initialization done.");
+  // Print header for serial logging
+  Serial.println("Time(ms), TPS, AFR");
+  //SdFile::dateTimeCallbackCancel();
 }
 
 void loop() {
@@ -93,6 +102,7 @@ void loop() {
       Serial.println(filename);
       // Create the header
       dataFile = SD.open(filename, FILE_WRITE);
+
       dataFile.println("Time(ms), TPS, AFR");
       close();
     }
@@ -104,6 +114,17 @@ void loop() {
     write();  // Write to the SD Card
     close();  // Close the file
   }
+}
+
+// call back for file timestamps
+void dateTime(uint16_t* date, uint16_t* time) {
+ DateTime now = rtc.now();
+
+ // return date using FAT_DATE macro to format fields
+ *date = FAT_DATE(now.year(), now.month(), now.day());
+
+ // return time using FAT_TIME macro to format fields
+ *time = FAT_TIME(now.hour(), now.minute(), now.second());
 }
 
 void read(){
