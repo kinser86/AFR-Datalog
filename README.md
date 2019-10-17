@@ -15,3 +15,6 @@ AFR data-logger written for Arduino
   * GND
   * MISO
   * SCK
+## Analog Inputs
+  * A3 - TPS Signal
+  * A4 - AFR Signal
