@@ -33,7 +33,7 @@ const int pinSD = 10;
 
 unsigned long currentMillis;  // Used for storing the latest time
 long previousMillis = 0;      // Store the last time the program ran
-const long interval = 100;    // Sample frequency (milliseconds)
+const long interval = 50;    // Sample frequency (milliseconds)
 
 int pinState;
 int ledGreen = LOW;
@@ -81,7 +81,22 @@ void loop() {
         digitalWrite(pinRead, LOW);   // Green LED OFF
         _currentState = _readState;
         previousMillis = currentMillis;
-        read();   // Read analog inputs and convert
+        //Read Values
+        TPS.raw = analogRead(TPS.pin);
+        AFR.raw = analogRead(AFR.pin);
+
+        // Calculate Values
+        //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;    // TPS ADC
+        //TPS.value = ((TPS_RAW * 5.0) / 1023.0);    // Voltage (VDC)
+        //AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
+        //AFR.value = ((AFR_RAW *5.0) / 1023.0);    // Voltage (VDC)
+  
+        // Print to Serial
+        //Serial.print(currentMillis);
+        //Serial.print(",");
+        //Serial.print(TPS.value);
+        //Serial.print(",");
+        //Serial.println(AFR.value);
 
       case _displayState:
         //Serial.println("Current State: _displayState");
@@ -99,33 +114,47 @@ void loop() {
         _currentState = _createState;
         previousMillis = currentMillis;
         if (filename == NULL) {
-          Serial.print("Creating new file... ");
+          //Serial.print("Creating new file... ");
           DateTime now = rtc.now();
           filename = String(now.unixtime(), DEC);
           filename = filename + ".txt";
-          Serial.print(filename);
-          Serial.println(" created!");
-          Serial.print("Writing header to file... ");
-          dataFile = SD.open(filename, FILE_WRITE);
+          //Serial.print(filename);
+          //Serial.println(" created!");
+          //Serial.print("Writing header to file... ");
+          //dataFile = SD.open(filename, FILE_WRITE);
+          dataFile = SD.open(filename, O_WRITE | O_CREAT);
           dataFile.println("Time(ms), TPS, AFR");
-          Serial.println("header written!");
+          //Serial.println("header written!");
           dataFile.close();
         };
 
       case _openState:
         //Serial.println("Current State: _openState");
         _currentState = _openState;
-        open();     // Open filename.txt
+        dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open filename.txt
 
       case _writeState:
         //Serial.println("Current State: _writeState");
         _currentState = _writeState;
-        write();    // Write to Sd Card
+        // if the file is available, write to it:
+        if (dataFile) {
+          String _stringMillis = String(millis());
+          String _stringTPS = String(TPS.raw);
+          String _stringAFR = String(AFR.raw);
+          String _data = _stringMillis + "," + _stringTPS + "," + _stringAFR;
+          dataFile.println(_data);
+        }
+        // if the file didn't open, print an error:
+        else {
+          Serial.print("error opening ");
+          Serial.println(filename);
+        }
 
       case _saveState:
         //Serial.println("Current State: _saveState");
         _currentState = _saveState;
-        close();    // Close filename.txt
+        dataFile.flush();
+        dataFile.close();
         _currentState = _readState;
         break;
     }
