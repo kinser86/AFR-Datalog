@@ -20,7 +20,7 @@ AFR data-logger written for Arduino
   * A4 - AFR Signal
 
 # AFR_GUI.py
-An interactive program designed to help review the data collecte utilizing pyqtgraph and Qt4 Designer.
+An interactive program designed to help review the data collect utilizing pyqtgraph and Qt4 Designer.
 
 # References
 * pyqtgraph | [Website](http://www.pyqtgraph.org) | [Github Repositoty](https://github.com/pyqtgraph/pyqtgraph)
