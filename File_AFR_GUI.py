@@ -53,14 +53,16 @@ class Ui_MainWindow(QtGui.QMainWindow):
         # This creates the central widget
         self.centralwidget = QtGui.QWidget()
         self.centralgridLayout = QtGui.QGridLayout(self.centralwidget)
-        self.centralgridLayout.setMargin(5)
-        self.centralgridLayout.setSpacing(2)
+        self.centralgridLayout.setMargin(0)
+        #self.centralgridLayout.setSpacing(2)
         # This create the horizontal layout
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setSpacing(2)
         # Create the graphics layout widget
         self.win = pg.GraphicsLayoutWidget(self.centralwidget)
+        pg.setConfigOptions(antialias=True)
         self.horizontalLayout.addWidget(self.win)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
 
         # Generate afrPlot
         self.afrPlot = self.win.addPlot(row = 0, col = 0)
@@ -70,16 +72,19 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.afrPlot.setLimits(yMin = 10, yMax = 20)
         self.afrPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.afrPlot.hideButtons()      #Disable auto-scale button
+        # self.afrPlot.showAxis('bottom', False)
+        self.afrPlot.setContentsMargins(0, 0, 0, 0)
 
         # Generate tpsPlot
         self.tpsPlot = self.win.addPlot(row = 1, col = 0)
         # Format tpsPlot
         self.tpsPlot.setRange(yRange = [0, 100], padding = 0.1)
         self.tpsPlot.setLimits(yMin = 0, yMax = 100)
-        self.tpsPlot.setLabel('left', 'Throttle')
+        self.tpsPlot.setLabel('left', 'Throttle (%)')
         self.tpsPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.tpsPlot.setXLink(self.afrPlot)
         self.tpsPlot.hideButtons()      #Disable auto-scale button
+        self.tpsPlot.setContentsMargins(0, 0, 0, 0)
 
         # Generate the rangePlot
         self.rangePlot = self.win.addPlot(row = 2, col = 0)
@@ -89,6 +94,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.rangePlot.setLimits(yMin = 10, yMax = 20)
         self.rangePlot.showGrid(x = True, y = True, alpha = 0.3)
         self.rangePlot.hideButtons()      #Disable auto-scale button
+        self.rangePlot.setContentsMargins(0, 0, 0, 0)
 
         # Build the UI
         self.centralgridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
@@ -138,9 +144,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.lineAfr = pg.InfiniteLine(movable=True, angle = 90)
         self.lineTps = pg.InfiniteLine(movable=True, angle=90)
         self.lineRange = pg.InfiniteLine(movable=True, angle=90)
-        self.lineAfr.setPos(x[2])
-        self.lineTps.setPos(x[2])
-        self.lineRange.setPos(x[2])
+        self.lineAfr.setPos(x[200])
         self.afrPlot.addItem(self.lineAfr)
         self.tpsPlot.addItem(self.lineTps)
         self.rangePlot.addItem(self.lineRange)
@@ -174,15 +178,17 @@ class Ui_MainWindow(QtGui.QMainWindow):
             self.lineAfr.setPos(self.linePos[0])
             self.lineTps.setPos(self.linePos[0])
 
-        self.lineAfr.sigPositionChanged.connect(afr_line_pos)
-        self.lineTps.sigPositionChanged.connect(tps_line_pos)
-        self.lineRange.sigPositionChanged.connect(range_line_pos)
-
         def update():
             self.region.setZValue(10)
             minX, maxX = self.region.getRegion()
             self.afrPlot.setXRange(minX, maxX, padding = 0)
+            self.lineAfr.setBounds((minX, maxX))
+            self.lineTps.setBounds((minX, maxX))
+            self.lineRange.setBounds((minX, maxX))
 
+        self.lineAfr.sigPositionChanged.connect(afr_line_pos)
+        self.lineTps.sigPositionChanged.connect(tps_line_pos)
+        self.lineRange.sigPositionChanged.connect(range_line_pos)
         self.region.sigRegionChanged.connect(update)
 
         def updateRegion(window, viewRange):
@@ -190,7 +196,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
             self.region.setRegion(self.rgn)
 
         self.afrPlot.sigRangeChanged.connect(updateRegion)
-        self.region.setRegion([x[0], x[50]])
+        self.region.setRegion([x[100], x[-100]])
 
     # menuBar Actions
     def file_open(self):
