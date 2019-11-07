@@ -29,7 +29,7 @@ Generates a csv file named with the unix timestamp of when the file was created.
 | :---: | :---: | :---: |
 | millis() | Raw 10-bit Value | Raw 10-bit Value |
 
-* The time column contains the current millisecond, measured from when the program started to when the measurement was made. The actual time in milliseconds isn't as important as the time difference between samples (Sample<sub>n+1</sub> - Sample<sub>n</sub>. Ideally, the difference between Sample<sub>n+1</sub> and Sample<sub>n</sub> should be = 50-ms.
+* The time column contains the current millisecond, measured from when the program started to when the measurement was made. The actual time in milliseconds isn't as important as the time difference between samples (Sample<sub>n+1</sub> - Sample<sub>n</sub>). Ideally, the difference between Sample<sub>n+1</sub> and Sample<sub>n</sub> should be = 50-ms.
 * The TPS column contains the 10-bit value of the throttle position sensor.
   * Translate the TPS 10-bit value into percent(%):
   * Translate the TPS 10-bit value into voltage(VDC)
