@@ -1,5 +1,5 @@
 # AFR-Datalog
-AFR data-logger written for Arduino
+AFR data-logger written for Arduino that records the air-fuel ratio (AFR) and throttle position sensor (TPS) at 10-Hz. The data is analyzed in the AFR_GUI.py file which converts the raw 10-bit data into readable information. 
 
 # Arduino
 ## Pinouts
@@ -20,7 +20,7 @@ AFR data-logger written for Arduino
   * A3 - TPS Signal
   * A4 - AFR Signal
 ## Output
-Generates a csv file, named with the unix timestamp of when the file was created.
+Generates a csv file named with the unix timestamp of when the file was created. Converting the time will provide the exact time the datalogging started.
 
 | Time(ms) | AFR | TPS |
 | -------- | --- | --- |
