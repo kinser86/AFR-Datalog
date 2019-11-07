@@ -23,7 +23,7 @@ AFR data-logger written for Arduino that records the throttle position sensor (T
 Generates a csv file named with the unix timestamp of when the file was created. Converting the time will provide the exact time the datalogging started.
 
 | Time(ms) | TPS | AFR |
-| -------- | --- | --- |
+| :---: | :---: | :---: |
 | millis() | Raw 10-bit Value | Raw 10-bit Value |
 
 * The time column contains the current millisecond, measured from when the program started to when the measurement was made.
