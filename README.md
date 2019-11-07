@@ -19,6 +19,9 @@ AFR data-logger written for Arduino that records the throttle position sensor (T
 * Analog Inputs
   * A3 - TPS Signal
   * A4 - AFR Signal
+* Sensors
+  * TPS: [Amphenol Piher Sensing Systems, SENSOR ANGLE 90DEG WIRE LEADS, PSC360G2-F1A-C0011-ERA090-05K](https://www.digikey.com/product-detail/en/amphenol-piher-sensing-systems/PSC360G2-F1A-C0011-ERA090-05K/1993-1007-ND/9555845)
+  * AFR: [Spartan Lambda Controller 2](https://www.14point7.com/products/spartan-lambda-controller-2)
 ## Output
 Generates a csv file named with the unix timestamp of when the file was created. Converting the time will provide the exact time the datalogging started.
 
