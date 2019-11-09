@@ -58,7 +58,18 @@ void setup() {
   // Start RTC
   Serial.print("\n\nStarting RTC...");
   rtc.begin();
-  delay(250);
+  // Show all lights as part of boot sequence
+  digitalWrite(ledRecord, HIGH);
+  digitalWrite(ledRead, HIGH);
+  digitalWrite(ledError, HIGH);
+  // Throw away analog read
+  pinState = digitalRead(pinSwitch);
+  TPS.raw = analogRead(TPS.pin);
+  AFR.raw = analogRead(AFR.pin);
+  delay(500);
+  digitalWrite(ledRecord, LOW);
+  digitalWrite(ledRead, LOW);
+  digitalWrite(ledError, LOW);
   Serial.println(" RTC started!");
   Serial.print("Initializing SD card...");
   if (!SD.begin(pinSD)) {
@@ -159,13 +170,13 @@ void loop() {
       case _writeState:
         //Serial.println("Current State: _writeState");
         _currentState = _writeState;
+        digitalWrite(ledRecord, HIGH);
         //Serial.println(buffer.length());
         if (buffer.length() >= 312) {
           dataFile.write(buffer.c_str());
           buffer.remove(0);
           dataFile.flush();
         }
-        digitalWrite(ledRecord, HIGH);
         _currentState = _readState;
         previousMillis = currentMillis;
         break;
