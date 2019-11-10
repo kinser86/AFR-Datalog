@@ -17,40 +17,60 @@ class Ui_MainWindow(QtGui.QMainWindow):
         super(Ui_MainWindow, self).__init__()
         # This sets up the main window
         self.resize(900, 600)
-        self.setWindowTitle("Air-Fuel Ratio Data Analyzer")
+        self.setWindowTitle("Air-Fuel Ratio Analyzer")
+        self.setWindowIcon(QtGui.QIcon('/home/malfoy/Desktop/AFR/AFR.png'))
+        # Center the window in the middle of the screen
+        res = QtGui.QDesktopWidget().screenGeometry()
+        self.move((res.width() / 2) - (self.frameSize().width() / 2),
+                  (res.height() / 2) - (self.frameSize().height() / 2))
 
         # Setup the menu
         openFile = QtGui.QAction("&Open File", self)
         openFile.setShortcut("Ctrl+O")
-        openFile.setStatusTip('Open File')
+        openFile.setStatusTip('Open file.')
         openFile.triggered.connect(self.file_open)
-
-        clearData = QtGui.QAction("&Clear Data", self)
-        clearData.setShortcut("Ctrl+L")
-        clearData.setStatusTip('Clear Data')
-        clearData.triggered.connect(self.data_clear)
 
         quitApplication = QtGui.QAction("&Quit", self)
         quitApplication.setShortcut("Ctrl+Q")
         quitApplication.setStatusTip('Quit the application.')
         quitApplication.triggered.connect(self.close_application)
 
+        self.clearData = QtGui.QAction("&Clear Data", self)
+        self.clearData.setShortcut("Ctrl+L")
+        self.clearData.setStatusTip('Clear the loaded data.')
+        self.clearData.setEnabled(False)
+        self.clearData.triggered.connect(self.data_clear)
+
+        self.infoData = QtGui.QAction("&Information", self)
+        self.infoData.setShortcut("Ctrl+I")
+        self.infoData.setStatusTip('Information about the current dataset.')
+        self.infoData.setEnabled(False)
+        self.infoData.triggered.connect(self.data_info)
+
         self.statusBar = QtGui.QStatusBar(self)
         self.statusBar.setStyleSheet(
             "background-color: rgb(60, 60, 60); color: rgb(184, 181, 178);")
         self.setStatusBar(self.statusBar)
 
-        # add items to the menubar
+        # Create the menuBar
         mainMenu = self.menuBar()
+        # Add the fileMenu to the menuBar
         fileMenu = mainMenu.addMenu('&File')
         fileMenu.addAction(openFile)
-        fileMenu.addAction(clearData)
+        fileMenu.addAction(self.clearData)
         fileMenu.addAction(quitApplication)
+        # Add the dataMenu to the menuBar
+        dataMenu = mainMenu.addMenu('&Data')
+        dataMenu.addAction(self.infoData)
 
         # run the setupUi method
         self.setupUi()
 
     def setupUi(self):
+        # Show the mainWindow
+        self.show()
+
+    def plot(self):
         # This creates the central widget
         self.centralwidget = QtGui.QWidget()
         self.centralwidget.setStyleSheet("background-color: rgb(0, 0, 0);")
@@ -100,10 +120,6 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.centralgridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
         self.setCentralWidget(self.centralwidget)
 
-        # Show the mainWindow
-        self.show()
-
-    def plot(self):
         # Adjust the plot range to the data
         self.afrPlot.setRange(xRange = [x[0], x[-1]])
         self.afrPlot.setLimits(xMin = x[0], xMax = x[-1])
@@ -216,6 +232,20 @@ class Ui_MainWindow(QtGui.QMainWindow):
                 yAfr.append((int(row[2]) * (10.0 / 1023.0)) + 10.0)
             #print(str(x))
         self.plot()
+        # Enable option since data now exist.
+        self.clearData.setEnabled(True)
+        self.infoData.setEnabled(True)
+
+    def close_application(self):
+        choice = QtGui.QMessageBox.question(self,
+            'Quit',     # Window title
+            "Quit the application?",    # Window content
+            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        if choice == QtGui.QMessageBox.Yes:
+            print("Closing")
+            sys.exit()
+        else:
+            pass
 
     def data_clear(self):
         global x, yTps, yAfr
@@ -230,16 +260,29 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.tpsPlot.clear()
         self.rangePlot.clear()
 
-    def close_application(self):
-        choice = QtGui.QMessageBox.question(self,
-            'Quit',     # Window title
-            "Quit the application?",    # Window content
-            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if choice == QtGui.QMessageBox.Yes:
-            print("Closing")
-            sys.exit()
-        else:
-            pass
+        # Disable option since data no longer exist
+        self.clearData.setEnabled(False)
+        self.infoData.setEnabled(False)
+
+    def data_info(self):
+        # deltaWin = Ui_MainWindow()
+        # deltaWin()
+        timeDelta = [x[i + 1] - x[i] for i in range(len(x)-1)]
+
+        self.deltaPlot = pg.plot(
+            timeDelta,
+            title = "Dataset Information",
+            pen = 'r')
+        self.deltaPlot.setTitle("Time difference")
+        self.deltaPlot.setLabel('left', "Time", units = 'ms')
+        self.deltaPlot.setLabel('bottom', "Sample Number")
+        self.deltaPlot.setRange(xRange = [0, len(timeDelta)-1])
+        self.deltaPlot.setLimits(
+            xMin = 0,
+            xMax = len(timeDelta)-1,
+            yMin = 0)
+        self.deltaPlot.showGrid(x = True, y = True, alpha = 0.3)
+        ax = self.deltaPlot.getAxis('left')
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
