@@ -22,12 +22,13 @@ AFR data-logger written for Arduino that records the throttle position sensor (T
 * Sensors
   * TPS: [Amphenol Piher Sensing Systems, SENSOR ANGLE 90DEG WIRE LEADS, PSC360G2-F1A-C0011-ERA090-05K](https://www.digikey.com/product-detail/en/amphenol-piher-sensing-systems/PSC360G2-F1A-C0011-ERA090-05K/1993-1007-ND/9555845)
   * AFR: [Spartan Lambda Controller 2](https://www.14point7.com/products/spartan-lambda-controller-2)
+  * TMP: [TMP36 Temperature Sensor](https://cdn.sparkfun.com/datasheets/Sensors/Temp/TMP35_36_37.pdf)
 ## Output
 Generates a csv file named with the unix timestamp of when the file was created. Converting the time will provide the exact time the datalogging started.
 
-| Time(ms) | TPS | AFR |
-| :---: | :---: | :---: |
-| millis() | Raw 10-bit Value | Raw 10-bit Value |
+| Time(ms) | TPS | AFR | TMP |
+| :---: | :---: | :---: | :---: |
+| millis() | Raw 10-bit Value | Raw 10-bit Value | Raw 10-bit Value
 
 * The time column contains the current millisecond, measured from when the program started to when the measurement was made. The actual time in milliseconds isn't as important as the time difference between samples (Sample<sub>n+1</sub> - Sample<sub>n</sub>). Ideally, the difference between Sample<sub>n+1</sub> and Sample<sub>n</sub> should be = 50-ms.
 * The TPS column contains the 10-bit value of the throttle position sensor.
@@ -38,6 +39,7 @@ Generates a csv file named with the unix timestamp of when the file was created.
   * Translate the AFR 10-bit value into AFR:
     * AFR = rawAFR * (10.0 / 1023.0)) + 10.0)
   * Translate the AFR 10-bit value into voltage(VDC):
+* The TMP column contains the 10-bit value of the temperature.
 
 # AFR_GUI.py
 An interactive program designed to help review the data collect utilizing pyqtgraph and Qt4 Designer.
