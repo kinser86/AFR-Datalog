@@ -152,8 +152,8 @@ void loop() {
 
       // Calculate Values
       TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
-      AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC 
-      TMP.value = (((TMP.raw / 1023.0) * 5000) - 500) * 0.1;   // mV output
+      AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
+      TMP.value = ((TMP.raw * 0.004882814) - 0.5) * 100.0;
       
       //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;;    // Voltage (VDC)
       //AFR.value = ((AFR.raw *5.0) / 1023.0);    // Voltage (VDC)
