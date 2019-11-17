@@ -33,13 +33,17 @@ Generates a csv file named with the unix timestamp of when the file was created.
 * The time column contains the current millisecond, measured from when the program started to when the measurement was made. The actual time in milliseconds isn't as important as the time difference between samples (Sample<sub>n+1</sub> - Sample<sub>n</sub>). Ideally, the difference between Sample<sub>n+1</sub> and Sample<sub>n</sub> should be = 50-ms.
 * The TPS column contains the 10-bit value of the throttle position sensor.
   * Translate the TPS 10-bit value into percent(%):
-    * TPS = rawTPS * (100.0 / 1023.0)
+    * TPS.value = TPS.raw * (100.0 / 1023.0)
   * Translate the TPS 10-bit value into voltage(VDC)
+    * TBD
 * The AFR column contains the 10-bit value of the air-fuel ratio.
   * Translate the AFR 10-bit value into AFR:
-    * AFR = rawAFR * (10.0 / 1023.0)) + 10.0)
+    * AFR.value = AFR.raw * (10.0 / 1023.0)) + 10.0)
   * Translate the AFR 10-bit value into voltage(VDC):
+    * TBD
 * The TMP column contains the 10-bit value of the temperature.
+  * Translate the TMP 10-bit value into Degree C:
+    * TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
 
 # AFR_GUI.py
 An interactive program designed to help review the data collect utilizing pyqtgraph and Qt4 Designer.
