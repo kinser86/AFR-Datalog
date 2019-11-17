@@ -10,13 +10,14 @@ import numpy as np
 x = []
 yTps = []
 yAfr = []
+tmpC = []
 
 class Ui_MainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
         # This sets up the main window
-        self.resize(900, 600)
+        self.resize(600, 300)
         self.setWindowTitle("Air-Fuel Ratio Analyzer")
         self.setWindowIcon(QtGui.QIcon('/home/malfoy/Desktop/AFR/AFR.png'))
         # Center the window in the middle of the screen
@@ -71,6 +72,10 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.show()
 
     def plot(self):
+        self.resize(900, 600)
+        res = QtGui.QDesktopWidget().screenGeometry()
+        self.move((res.width() / 2) - (self.frameSize().width() / 2),
+                  (res.height() / 2) - (self.frameSize().height() / 2))
         # This creates the central widget
         self.centralwidget = QtGui.QWidget()
         self.centralwidget.setStyleSheet("background-color: rgb(0, 0, 0);")
@@ -123,13 +128,6 @@ class Ui_MainWindow(QtGui.QMainWindow):
         # Adjust the plot range to the data
         self.afrPlot.setRange(xRange = [x[0], x[-1]])
         self.afrPlot.setLimits(xMin = x[0], xMax = x[-1])
-        # ax = self.afrPlot.getAxis('bottom')
-        # ax.setStyle(
-        #     textFillLimits = [ (0, 0.8), (2, 0.6), (4, 0.4), (6, 0.2)],
-        #     autoExpandTextSpace = False)
-        # dx = [(value, '{:.0f}'.format(value)) for value in x]
-        # ax.setTicks([dx, []])
-
         self.tpsPlot.setRange(xRange = [x[0], x[-1]])
         self.tpsPlot.setLimits(xMin = x[0], xMax = x[-1])
         self.rangePlot.setRange(xRange = [x[0], x[-1]])
@@ -180,9 +178,10 @@ class Ui_MainWindow(QtGui.QMainWindow):
             self.lineRange.setPos(self.linePos[0])
             self.interpAfr = np.interp(self.linePos[0], x, yAfr)
             self.interpTps = np.interp(self.linePos[0], x, yTps)
-            self.interp = [self.interpAfr, self.interpTps]
+            self.interpTmp = np.interp(self.linePos[0], x, tmpC)
+            self.interp = [self.interpAfr, self.interpTps, self.interpTmp]
             #print("%0.2f, %0.2f" %(self.interpAfr, self.interpTps))
-            self.labelAFR.setText("AFR: %0.2f\nTPS: %0.2f%%" % (self.interp[0], self.interp[1]))
+            self.labelAFR.setText("AFR: %0.2f\nTPS: %0.2f%%\nTMP: %0.1fC" % (self.interp[0], self.interp[1], self.interp[2]))
 
         def tps_line_pos():
             self.linePos = self.lineTps.getPos()
@@ -216,7 +215,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
     # menuBar Actions
     def file_open(self):
-        global x, yTps, yAfr, file
+        global x, yTps, yAfr, tmpC, file
 
         name = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
         file = open(name, 'r')
@@ -230,6 +229,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
                 x.append(int(row[0]))
                 yTps.append(int(row[1]) * (100.0 / 1023.0))
                 yAfr.append((int(row[2]) * (10.0 / 1023.0)) + 10.0)
+                tmpC.append(((int(row[3]) * 0.004882814) - 0.5) * 100.0)
             #print(str(x))
         self.plot()
         # Enable option since data now exist.
