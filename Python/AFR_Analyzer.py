@@ -181,7 +181,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
             self.interpTmp = np.interp(self.linePos[0], x, tmpC)
             self.interp = [self.interpAfr, self.interpTps, self.interpTmp]
             #print("%0.2f, %0.2f" %(self.interpAfr, self.interpTps))
-            self.labelAFR.setText("AFR: %0.2f\nTPS: %0.2f%%\nTMP: %0.1fC" % (self.interp[0], self.interp[1], self.interp[2]))
+            self.labelAFR.setText("AFR: %0.2f\nTPS: %0.1f%%\nTMP: %0.1fC" % (self.interp[0], self.interp[1], self.interp[2]))
 
         def tps_line_pos():
             self.linePos = self.lineTps.getPos()
@@ -229,7 +229,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
                 x.append(int(row[0]))
                 yTps.append(int(row[1]) * (100.0 / 1023.0))
                 yAfr.append((int(row[2]) * (10.0 / 1023.0)) + 10.0)
-                tmpC.append(((int(row[3]) * 0.004882814) - 0.5) * 100.0)
+                tmpC.append((((int(row[3]) * 5.0) / 1024.0) - 0.5) * 100)
             #print(str(x))
         self.plot()
         # Enable option since data now exist.
