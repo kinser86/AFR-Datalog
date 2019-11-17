@@ -16,7 +16,7 @@ RTC_PCF8523 rtc;
 #define D5_pin  5
 #define D6_pin  6
 #define D7_pin  7
-LiquidCrystal_I2C  lcd(I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
+LiquidCrystal_I2C  lcd(I2C_ADDR, En_pin, Rw_pin, Rs_pin, D4_pin, D5_pin, D6_pin, D7_pin);
 
 enum state {
   _readState,     // Read analog values
@@ -39,7 +39,7 @@ struct sample {
 
 sample TPS = {"TPS", 2, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
 sample AFR = {"AFR", 3, 0, 14.7};    // Voltage range 0.0 - 5.0 VDC
-sample TMP = {"TMP", 1, 0, 25.0};     // 
+sample TMP = {"TMP", 1, 0, 25.0};     //
 
 const int ledRecord = 6;
 const int pinSwitch = 7;
@@ -63,8 +63,8 @@ void setup() {
   Serial.begin(57600);
   while (!Serial);
   // Start LCD
-  lcd.begin(16,2);
-  lcd.setBacklightPin(BACKLIGHT_PIN,POSITIVE);
+  lcd.begin(16, 2);
+  lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
   lcd.setBacklight(HIGH);
   lcd.home ();
   lcd.print("Init");
@@ -106,14 +106,14 @@ void setup() {
   Serial.println(" SD card initialized!");
   // Test Sd Card before continuing
   // Create header for files
-  sprintf(_header, "Time(ms),%s,%s,%s",TPS._name,AFR._name,TMP._name);
+  sprintf(_header, "Time(ms),%s,%s,%s", TPS._name, AFR._name, TMP._name);
   // Print header for serial logging
   //Serial.println(_header);
   filename = "TEST.txt";
   dataFile = SD.open(filename, O_WRITE | O_CREAT);
   dataFile.println(_header);
   dataFile.println("Test");
-  if (!dataFile){
+  if (!dataFile) {
     Serial.println("Unable to write to Sd Card.");
     digitalWrite(ledError, HIGH);
     _currentState = _errorState;
@@ -127,9 +127,9 @@ void setup() {
   lcd.print("ready");
   delay(200);
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("TPS:   %");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print("AFR:     TMP:  C");
 }
 
@@ -146,7 +146,7 @@ void loop() {
         //Serial.println("Current State: _readState");
         _currentState = _readState;
         digitalWrite(ledRead, LOW);   // Green LED OFF
-        // Record previous values 
+        // Record previous values
         TPS.prev = TPS.raw;
         AFR.prev = AFR.raw;
         TMP.prev = TMP.raw;
@@ -155,11 +155,11 @@ void loop() {
         AFR.raw = analogRead(AFR.pin);
         TMP.raw = analogRead(TMP.pin);
 
-      // Calculate Values
-      TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
-      AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
-      TMP.value = ((TMP.raw * 0.004882814) - 0.5) * 100.0;
-      
+        // Calculate Values
+        TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
+        AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
+        TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
+
       //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;;    // Voltage (VDC)
       //AFR.value = ((AFR.raw *5.0) / 1023.0);    // Voltage (VDC)
 
@@ -175,39 +175,39 @@ void loop() {
         _currentState = _displayState;
         // Update display only if values have changed
         // Display TPS Value
-        if (TPS.prev != TPS.raw){
-          lcd.setCursor(4,0);
-          if (TPS.value < 9.5){
+        if (TPS.prev != TPS.raw) {
+          lcd.setCursor(4, 0);
+          if (TPS.value < 9.5) {
             lcd.print(" ");
             lcd.print(" ");
-            lcd.print(TPS.value,0);
+            lcd.print(TPS.value, 0);
           }
-          else if((TPS.value >= 9.5) && (TPS.value < 100.0)){
+          else if ((TPS.value >= 9.5) && (TPS.value < 100.0)) {
             lcd.print(" ");
-            lcd.print(TPS.value,0);
+            lcd.print(TPS.value, 0);
           }
-          else{
-            lcd.print(TPS.value,0);
+          else {
+            lcd.print(TPS.value, 0);
           }
         }
         // Display AFR Value
-        if (AFR.prev != AFR.raw){
-          lcd.setCursor(4,1);
-          lcd.print(AFR.value,1);
+        if (AFR.prev != AFR.raw) {
+          lcd.setCursor(4, 1);
+          lcd.print(AFR.value, 1);
         }
         // Display TMP Value
-        if (TMP.prev != TMP.raw){
-          lcd.setCursor(13,1);
-          lcd.print(TMP.value,0);
+        if (TMP.prev != TMP.raw) {
+          lcd.setCursor(13, 1);
+          lcd.print(TMP.value, 0);
         }
         previousMillis = currentMillis;
         if (pinState != LOW) {
-          if (filename != ""){
+          if (filename != "") {
             Serial.print("Closing file...");
             dataFile.close();
             filename = "";
             Serial.println("file closed.");
-            lcd.setCursor(15,0);
+            lcd.setCursor(15, 0);
             lcd.print(" ");
           }
           _currentState = _readState;
@@ -228,7 +228,7 @@ void loop() {
           dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open file
           dataFile.println(_header);
           //Serial.println("header written!");
-          lcd.setCursor(15,0);
+          lcd.setCursor(15, 0);
           lcd.print("R");
         };
 
