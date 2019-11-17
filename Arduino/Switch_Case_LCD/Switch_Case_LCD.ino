@@ -33,12 +33,13 @@ struct sample {
   char* _name;
   const int pin;      // Input pin
   unsigned int raw;   // Raw value
+  unsigned int prev;  // Previous value
   float value;        // Calculated value
 };
 
 sample TPS = {"TPS", 2, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
 sample AFR = {"AFR", 3, 0, 14.7};    // Voltage range 0.0 - 5.0 VDC
-sample TMP = {"TMP", 1, 0, 0};     // 
+sample TMP = {"TMP", 1, 0, 25.0};     // 
 
 const int ledRecord = 6;
 const int pinSwitch = 7;
@@ -145,7 +146,11 @@ void loop() {
         //Serial.println("Current State: _readState");
         _currentState = _readState;
         digitalWrite(ledRead, LOW);   // Green LED OFF
-        //Read Values
+        // Record previous values 
+        TPS.prev = TPS.raw;
+        AFR.prev = AFR.raw;
+        TMP.prev = TMP.raw;
+        // Read Values
         TPS.raw = analogRead(TPS.pin);
         AFR.raw = analogRead(AFR.pin);
         TMP.raw = analogRead(TMP.pin);
@@ -168,27 +173,33 @@ void loop() {
       case _displayState:
         //Serial.println("Current State: _displayState");
         _currentState = _displayState;
+        // Update display only if values have changed
         // Display TPS Value
-        lcd.setCursor(4,0);
-        
-        if (TPS.value < 9.5){
-          lcd.print(" ");
-          lcd.print(" ");
-          lcd.print(TPS.value,0);
-        }
-        else if((TPS.value >= 9.5) && (TPS.value < 100.0)){
-          lcd.print(" ");
-          lcd.print(TPS.value,0);
-        }
-        else{
-          lcd.print(TPS.value,0);
+        if (TPS.prev != TPS.raw){
+          lcd.setCursor(4,0);
+          if (TPS.value < 9.5){
+            lcd.print(" ");
+            lcd.print(" ");
+            lcd.print(TPS.value,0);
+          }
+          else if((TPS.value >= 9.5) && (TPS.value < 100.0)){
+            lcd.print(" ");
+            lcd.print(TPS.value,0);
+          }
+          else{
+            lcd.print(TPS.value,0);
+          }
         }
         // Display AFR Value
-        lcd.setCursor(4,1);
-        lcd.print(AFR.value,1);
+        if (AFR.prev != AFR.raw){
+          lcd.setCursor(4,1);
+          lcd.print(AFR.value,1);
+        }
         // Display TMP Value
-        lcd.setCursor(13,1);
-        lcd.print(TMP.value,0);
+        if (TMP.prev != TMP.raw){
+          lcd.setCursor(13,1);
+          lcd.print(TMP.value,0);
+        }
         previousMillis = currentMillis;
         if (pinState != LOW) {
           if (filename != ""){
