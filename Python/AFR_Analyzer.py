@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 import pyqtgraph as pg  #PyQtGraph is a pure-python graphics and GUI library built on PyQt4 / PySide and numpy
 from pyqtgraph import PlotWidget
 import csv
@@ -19,11 +19,13 @@ class Ui_MainWindow(QtGui.QMainWindow):
         # This sets up the main window
         self.resize(600, 300)
         self.setWindowTitle("Air-Fuel Ratio Analyzer")
-        self.setWindowIcon(QtGui.QIcon('/home/malfoy/Desktop/AFR/AFR.png'))
-        # Center the window in the middle of the screen
-        res = QtGui.QDesktopWidget().screenGeometry()
-        self.move((res.width() / 2) - (self.frameSize().width() / 2),
-                  (res.height() / 2) - (self.frameSize().height() / 2))
+        #self.setWindowIcon(QtGui.QIcon('/home/malfoy/Desktop/AFR/AFR.png'))
+        
+        # Center the window in the middle of the screen    
+        frame = self.frameGeometry()
+        centerPoint = QtGui.QDesktopWidget().availableGeometry().center()
+        frame.moveCenter(centerPoint)
+        self.move(frame.topLeft())
 
         # Setup the menu
         openFile = QtGui.QAction("&Open File", self)
@@ -73,9 +75,13 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
     def plot(self):
         self.resize(900, 600)
-        res = QtGui.QDesktopWidget().screenGeometry()
-        self.move((res.width() / 2) - (self.frameSize().width() / 2),
-                  (res.height() / 2) - (self.frameSize().height() / 2))
+
+        # Center the window in the middle of the screen    
+        frame = self.frameGeometry()
+        centerPoint = QtGui.QDesktopWidget().availableGeometry().center()
+        frame.moveCenter(centerPoint)
+        self.move(frame.topLeft())
+       
         # This creates the central widget
         self.centralwidget = QtGui.QWidget()
         self.centralwidget.setStyleSheet("background-color: rgb(0, 0, 0);")
@@ -218,7 +224,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         global x, yTps, yAfr, tmpC, file
 
         name = QtGui.QFileDialog.getOpenFileName(self, 'Open File')
-        file = open(name, 'r')
+        file = open(name[0], 'r')
 
         with file:
             # Do stuff
