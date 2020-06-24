@@ -7,10 +7,10 @@ import csv
 import numpy as np
 
 # Variables
-x = []
-yTps = []
-yAfr = []
-tmpC = []
+x = []      # Timestamp
+yTps = []   # Throttle Position Sensor
+yAfr = []   # Air Fuel Ratio
+tmpC = []   # Temperature Degree Celsius
 
 class Ui_MainWindow(QtGui.QMainWindow):
 
