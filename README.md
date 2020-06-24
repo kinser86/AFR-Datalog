@@ -46,9 +46,9 @@ Generates a csv file named with the unix timestamp of when the file was created.
     * TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
 
 # AFR_GUI.py
-An interactive program designed to help review the data collect utilizing pyqtgraph and Qt4 Designer.
+An interactive program designed to help review the data collect utilizing pyqtgraph and Qt5 Designer.
 
 # References
 * pyqtgraph | [Website](http://www.pyqtgraph.org) | [Github Repositoty](https://github.com/pyqtgraph/pyqtgraph)
-* Qt Designer | [Manual](https://doc.qt.io/archives/qt-4.8/designer-manual.html)
+* Qt Designer | [Manual](https://doc.qt.io/qt-5/qtdesigner-manual.html)
   * [Build Reference](https://www.tutorialspoint.com/pyqt/pyqt_using_qt_designer.htm)
