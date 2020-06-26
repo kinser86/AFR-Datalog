@@ -1,22 +1,14 @@
 // Libraries
-#include <SdFat.h>
-#include <RTClib.h>
-#include <LiquidCrystal_I2C.h>
+#include <SdFat.h>    // Sd-Card
+#include <RTClib.h>   // Real-time clock
+#include <Wire.h>     // I2C
+#include <LiquidCrystal_I2C.h>  // LCD
 
 // Setup RTC
 RTC_PCF8523 rtc;
 
 // Setup LCD
-#define I2C_ADDR    0x27
-#define BACKLIGHT_PIN     3
-#define En_pin  2
-#define Rw_pin  1
-#define Rs_pin  0
-#define D4_pin  4
-#define D5_pin  5
-#define D6_pin  6
-#define D7_pin  7
-LiquidCrystal_I2C  lcd(I2C_ADDR, En_pin, Rw_pin, Rs_pin, D4_pin, D5_pin, D6_pin, D7_pin);
+LiquidCrystal_I2C lcd(0x27, 16, 2);   //16 characters wide by 2 characters tall
 
 enum state {
   _readState,     // Read analog values
@@ -63,8 +55,8 @@ void setup() {
   Serial.begin(57600);
   while (!Serial);
   // Start LCD
-  lcd.begin(16, 2);
-  lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
+  lcd.init();                      // initialize the lcd 
+  lcd.backlight();
   lcd.setBacklight(HIGH);
   lcd.home ();
   lcd.print("Init");
@@ -99,6 +91,8 @@ void setup() {
   if (!SD.begin(pinSD)) {
     Serial.println("Card failed, or not present");
     digitalWrite(ledError, HIGH);
+    lcd.clear();
+    lcd.print("SD-Card Error!");
     _currentState = _errorState;
     return;
   }
