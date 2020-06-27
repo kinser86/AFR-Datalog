@@ -43,12 +43,15 @@ unsigned long currentMillis;  // Used for storing the latest time
 unsigned long previousMillis = 0;      // Store the last time the program ran
 const unsigned long interval = 50;     // Sample frequency (milliseconds)
 
+// SPST Switch
 int pinState;
 
+// SD-Card
 String filename;
 char _header[24];
 SdFat SD;
-File dataFile;    // SD Card
+#define SPI_SPEED SD_SCK_MHZ(50)  // 50 is the highest, 4 is the lowest
+File dataFile;
 
 void setup() {
   // Start serial
@@ -65,7 +68,7 @@ void setup() {
   pinMode(pinSwitch, INPUT_PULLUP);
   pinMode(ledRecord, OUTPUT);
   pinMode(ledRead, OUTPUT);
-  pinMode(pinSD, OUTPUT);
+//  pinMode(pinSD, OUTPUT);
   lcd.print(".");
   // Start RTC, perform some stuff while it starts
   Serial.print("\n\nStarting RTC...");
@@ -88,7 +91,7 @@ void setup() {
   lcd.print(".");
   Serial.println(" RTC started!");
   Serial.print("Initializing SD card...");
-  if (!SD.begin(pinSD)) {
+  if (!SD.begin(pinSD, SPI_SPEED)) {
     Serial.println("Card failed, or not present");
     digitalWrite(ledError, HIGH);
     lcd.clear();
@@ -245,6 +248,7 @@ void loop() {
         Serial.println("Current State: _errorState");
         digitalWrite(ledError, HIGH);
         _currentState = _errorState;
+        while(1);   // Prevent flood of serial prints.
     }
   }
 }
