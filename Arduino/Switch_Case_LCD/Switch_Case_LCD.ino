@@ -3,6 +3,7 @@
 #include <RTClib.h>   // Real-time clock
 #include <Wire.h>     // I2C
 #include <LiquidCrystal_I2C.h>  // LCD
+#include <FastLED.h>    // Neopixel
 
 // Setup RTC
 RTC_PCF8523 rtc;
@@ -10,11 +11,16 @@ RTC_PCF8523 rtc;
 // Setup LCD
 LiquidCrystal_I2C lcd(0x27, 16, 2);   //16 characters wide by 2 characters tall
 
+// Setup NeoPixel
+#define numLeds 8   // Number of available LEDs
+#define neoPin 24   // Digital Pin Output
+
+CRGB neoLeds[numLeds];
+
 enum state {
+  _idleState,          // Wait for overflow
   _readState,     // Read analog values
-  _displayState,  // Display values on LCD
-  _createState,   // Create a file for datalogging
-  _writeState,    // Write data to file
+  _logState,    // Write data to file
   _errorState     // Stop the program if something is wrong
 };
 
@@ -22,22 +28,26 @@ state _currentState;
 
 // Declare Variables
 struct sample {
-  char* _name;
+  char const *_name;
   const int pin;      // Input pin
   unsigned int raw;   // Raw value
   unsigned int prev;  // Previous value
   float value;        // Calculated value
 };
 
-sample TPS = {"TPS", 2, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
-sample AFR = {"AFR", 3, 0, 14.7};    // Voltage range 0.0 - 5.0 VDC
-sample TMP = {"TMP", 1, 0, 25.0};     //
+sample TMP = {"TMP", 8, 0, 0, 25.0};    //
+sample TPS = {"TPS", 9, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
+sample AFR = {"AFR", 10, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
 
-const int ledRecord = 6;
+const int ledRecord = 7;  //LED
+const int ledRead =  0;   //LED
+const int ledError = 1;   //LED
+
 const int pinSwitch = 7;
-const int ledRead =  8;
-const int ledError = 9;
-const int pinSD = 10;
+const int pinSD = 10;   // Sd-Card Chip Select
+
+// Speed Counter
+volatile unsigned long time1, time2, timeDelta, timeDelta1, count;
 
 unsigned long currentMillis;  // Used for storing the latest time
 unsigned long previousMillis = 0;      // Store the last time the program ran
@@ -57,37 +67,45 @@ void setup() {
   // Start serial
   Serial.begin(57600);
   while (!Serial);
+
+  // RPM counter
+  attachInterrupt(digitalPinToInterrupt(2), speedCount, RISING);       // interrupt programme when signal to pin 2 detected (0 = pin 2 and 1 = pin 2)
+
+  // Start NeoPixel
+  FastLED.addLeds<NEOPIXEL, neoPin>(neoLeds, numLeds);
+  FastLED.clear();  // Clear the pixels
+
   // Start LCD
-  lcd.init();                      // initialize the lcd 
+  lcd.init();   // initialize the lcd
   lcd.backlight();
   lcd.setBacklight(HIGH);
   lcd.home ();
   lcd.print("Init");
   // Define digital IO
-  pinMode(ledError, OUTPUT);
   pinMode(pinSwitch, INPUT_PULLUP);
-  pinMode(ledRecord, OUTPUT);
-  pinMode(ledRead, OUTPUT);
-//  pinMode(pinSD, OUTPUT);
   lcd.print(".");
+  neoLeds[0].setRGB( 50, 0, 0);
+  FastLED.show();
   // Start RTC, perform some stuff while it starts
   Serial.print("\n\nStarting RTC...");
   rtc.begin();
   lcd.print(".");
-  // Show all lights as part of boot sequence
-  digitalWrite(ledRecord, HIGH);
-  digitalWrite(ledRead, HIGH);
-  digitalWrite(ledError, HIGH);
+  neoLeds[2].setRGB( 0, 50, 0);
+  FastLED.show();
   // Throw away analog read
   pinState = digitalRead(pinSwitch);
   TPS.raw = analogRead(TPS.pin);
   AFR.raw = analogRead(AFR.pin);
   TMP.raw = analogRead(TMP.pin);
   lcd.print(".");
+  neoLeds[4].setRGB( 0, 0, 50);
+  FastLED.show();
   delay(500);
-  digitalWrite(ledRecord, LOW);
-  digitalWrite(ledRead, LOW);
-  digitalWrite(ledError, LOW);
+  // Clear the NeoPixels
+  for (int i = 0; i < numLeds; i++) {
+    neoLeds[i].setRGB( 0, 0, 0);
+  }
+  FastLED.show();
   lcd.print(".");
   Serial.println(" RTC started!");
   Serial.print("Initializing SD card...");
@@ -131,124 +149,197 @@ void setup() {
 }
 
 void loop() {
-  pinState = digitalRead(pinSwitch);
-  digitalWrite(ledRead, HIGH);
-  digitalWrite(ledRecord, LOW);
-  currentMillis = millis();
+  switch (_currentState) {
 
-  if ((currentMillis - previousMillis) >= interval) {
-    switch (_currentState) {
+    case _idleState:
+      _currentState = _idleState;
+      //      stateFunc();
+      idleFunc();
+      break;
 
-      case _readState:
-        //Serial.println("Current State: _readState");
-        _currentState = _readState;
-        digitalWrite(ledRead, LOW);   // Green LED OFF
-        // Record previous values
-        TPS.prev = TPS.raw;
-        AFR.prev = AFR.raw;
-        TMP.prev = TMP.raw;
-        // Read Values
-        TPS.raw = analogRead(TPS.pin);
-        AFR.raw = analogRead(AFR.pin);
-        TMP.raw = analogRead(TMP.pin);
+    case _readState:
+      _currentState = _readState;
+      //      stateFunc();
+      readFunc();
+      speedFunc();
+      displayFunc();
+      _currentState = _idleState;
+      break;
 
-        // Calculate Values
-        TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
-        AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
-        TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
+    case _logState:
+      _currentState = _logState;
+      //      stateFunc();
+      readFunc();
+      speedFunc();
+      displayFunc();
+      createFunc();
+      writeFunc();
+      _currentState = _idleState;
+      break;
 
-      //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;;    // Voltage (VDC)
-      //AFR.value = ((AFR.raw *5.0) / 1023.0);    // Voltage (VDC)
+    case _errorState:
+      _currentState = _errorState;
+      //      stateFunc();
+      errorFunc();
+  }
+}
 
-      // Print to Serial
-      //Serial.print(currentMillis);
-      //Serial.print(",");
-      //Serial.print(TPS.value);
-      //Serial.print(",");
-      //Serial.println(AFR.value);
+void idleFunc() {
+  while ((millis() - previousMillis) < interval) {
+    pinState = digitalRead(pinSwitch);
+  }
+  previousMillis += interval;   // Makes a constant sample!
+  if (!pinState) {
+    _currentState = _logState;
+  }
+  else {
+    _currentState = _readState;
+  }
+}
 
-      case _displayState:
-        //Serial.println("Current State: _displayState");
-        _currentState = _displayState;
-        // Update display only if values have changed
-        // Display TPS Value
-        if (TPS.prev != TPS.raw) {
-          lcd.setCursor(4, 0);
-          if (TPS.value < 9.5) {
-            lcd.print(" ");
-            lcd.print(" ");
-            lcd.print(TPS.value, 0);
-          }
-          else if ((TPS.value >= 9.5) && (TPS.value < 100.0)) {
-            lcd.print(" ");
-            lcd.print(TPS.value, 0);
-          }
-          else {
-            lcd.print(TPS.value, 0);
-          }
-        }
-        // Display AFR Value
-        if (AFR.prev != AFR.raw) {
-          lcd.setCursor(4, 1);
-          lcd.print(AFR.value, 1);
-        }
-        // Display TMP Value
-        if (TMP.prev != TMP.raw) {
-          lcd.setCursor(13, 1);
-          lcd.print(TMP.value, 0);
-        }
-        previousMillis = currentMillis;
-        if (pinState != LOW) {
-          if (filename != "") {
-            Serial.print("Closing file...");
-            dataFile.close();
-            filename = "";
-            Serial.println("file closed.");
-            lcd.setCursor(15, 0);
-            lcd.print(" ");
-          }
-          _currentState = _readState;
-          break;
-        };
+void readFunc(void) {
+  neoLeds[ledRead].setRGB( 0, 0, 50);
+  FastLED.show();
+  // Record previous values
+  TPS.prev = TPS.raw;
+  AFR.prev = AFR.raw;
+  TMP.prev = TMP.raw;
+  // Read Values
+  TPS.raw = analogRead(TPS.pin);
+  AFR.raw = analogRead(AFR.pin);
+  TMP.raw = analogRead(TMP.pin);
+  // Calculate Values
+  TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
+  AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
+  TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
 
-      case _createState:
-        //Serial.println("Current State: _createState");
-        _currentState = _createState;
-        if (filename == "") {
-          //Serial.print("Creating new file... ");
-          DateTime now = rtc.now();
-          filename = String(now.unixtime(), DEC);
-          filename = filename + ".txt";
-          Serial.print(filename);
-          Serial.println(" created!");
-          //Serial.print("Writing header to file... ");
-          dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open file
-          dataFile.println(_header);
-          //Serial.println("header written!");
-          lcd.setCursor(15, 0);
-          lcd.print("R");
-        };
+  //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;;    // Voltage (VDC)
+  //AFR.value = ((AFR.raw *5.0) / 1023.0);    // Voltage (VDC)
 
-      case _writeState:
-        //Serial.println("Current State: _writeState");
-        _currentState = _writeState;
-        digitalWrite(ledRecord, HIGH);
-        dataFile.print(millis());
-        dataFile.print(",");
-        dataFile.print(TPS.raw);
-        dataFile.print(",");
-        dataFile.print(AFR.raw);
-        dataFile.print(",");
-        dataFile.println(TMP.raw);
-        _currentState = _readState;
-        previousMillis = currentMillis;
-        break;
+  neoLeds[ledRead].setRGB( 0, 0, 0);
+  FastLED.show();
+}
 
-      case _errorState:
-        Serial.println("Current State: _errorState");
-        digitalWrite(ledError, HIGH);
-        _currentState = _errorState;
-        while(1);   // Prevent flood of serial prints.
+void displayFunc(void) {
+  // Update display only if values have changed
+  // Display TPS Value
+  if (TPS.prev != TPS.raw) {
+    lcd.setCursor(4, 0);
+    if (TPS.value < 9.5) {
+      lcd.print(" ");
+      lcd.print(" ");
+      lcd.print(TPS.value, 0);
     }
+    else if ((TPS.value >= 9.5) && (TPS.value < 100.0)) {
+      lcd.print(" ");
+      lcd.print(TPS.value, 0);
+    }
+    else {
+      lcd.print(TPS.value, 0);
+    }
+  }
+  // Display AFR Value
+  if (AFR.prev != AFR.raw) {
+    lcd.setCursor(4, 1);
+    lcd.print(AFR.value, 1);
+  }
+  // Display TMP Value
+  if (TMP.prev != TMP.raw) {
+    lcd.setCursor(13, 1);
+    lcd.print(TMP.value, 0);
+  }
+  if (pinState) {
+    if (filename != "") {
+      Serial.print("Closing file...");
+      dataFile.close();
+      filename = "";
+      Serial.println("file closed.");
+      lcd.setCursor(15, 0);
+      lcd.print(" ");
+    }
+  };
+}
+
+void createFunc(void) {
+  if (filename == "") {
+    DateTime now = rtc.now();
+    filename = String(now.unixtime(), DEC);
+    filename = filename + ".txt";
+    Serial.print(filename);
+    Serial.println(" created!");
+    dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open file
+    dataFile.println(_header);
+    lcd.setCursor(15, 0);
+    lcd.print("R");
+  };
+}
+
+void writeFunc(void) {
+  neoLeds[ledRecord].setRGB( 0, 50, 0);
+  FastLED.show();
+  dataFile.print(previousMillis);
+  dataFile.print(",");
+  dataFile.print(TPS.raw);
+  dataFile.print(",");
+  dataFile.print(AFR.raw);
+  dataFile.print(",");
+  dataFile.println(TMP.raw);
+  neoLeds[ledRecord].setRGB( 0, 0, 0);
+  FastLED.show();
+}
+
+void errorFunc(void) {
+  Serial.println("Current State: _errorState");
+  errorLed();
+  while (1);  // Prevent flood of serial prints.
+}
+
+void stateFunc(void) {
+  //  if (_prevState != _currentState) {
+  //    Serial.print("Current State: ");
+  //    Serial.println(_currentState);
+  //  }
+}
+
+void errorLed(void) {
+  for (int i = 0; i < numLeds; i++) {
+    neoLeds[i].setRGB(50, 0, 0);
+  }
+  FastLED.show();
+}
+
+void speedCount(void)
+{
+  if (time1) {
+    time2 = micros();
+    timeDelta = time2 - time1;
+    time1 = time2;
+  }
+  else {
+    time1 = micros();
+  }
+}
+
+void speedFunc(void) {
+  /*
+     If the time has changed
+      update the time
+     else
+      dont do anything
+
+      if time2 - time1 > 100000
+        speed = 0
+  */
+  if (timeDelta != timeDelta1) {
+//    Serial.println(timeDelta);
+    timeDelta1 = timeDelta;
+  }
+
+  if (timeDelta1 == timeDelta) {
+    count++;
+  }
+  if (count > 40) {
+//    Serial.println("0");
+    count = 0;
   }
 }
