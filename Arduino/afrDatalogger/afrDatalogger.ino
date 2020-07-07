@@ -18,10 +18,10 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);   //16 characters wide by 2 characters tall
 CRGB neoLeds[numLeds];
 
 enum state {
-  _idleState,          // Wait for overflow
-  _readState,     // Read analog values
+  _idleState,   // Wait for overflow
+  _readState,   // Read analog values
   _logState,    // Write data to file
-  _errorState     // Stop the program if something is wrong
+  _errorState   // Stop the program if something is wrong
 };
 
 state _currentState;
@@ -29,15 +29,17 @@ state _currentState;
 // Declare Variables
 struct sample {
   char const *_name;
+  String const longName; // Long name
   const int pin;      // Input pin
   unsigned int raw;   // Raw value
   unsigned int prev;  // Previous value
   float value;        // Calculated value
 };
 
-sample TMP = {"TMP", 8, 0, 0, 25.0};    //
-sample TPS = {"TPS", 9, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
-sample AFR = {"AFR", 10, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
+sample TMP = {"TMP", "Temperature", 8, 0, 0, 25.0};    //
+sample TPS = {"TPS", "Throttle Position", 9, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
+sample AFR = {"AFR", "Air-Fuel Ratio", 10, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
+sample VEL = {"VEL", "Velocity", 2, 0, 0, 0};
 
 const int ledRecord = 7;  //LED
 const int ledRead =  0;   //LED
@@ -47,7 +49,7 @@ const int pinSwitch = 7;
 const int pinSD = 10;   // Sd-Card Chip Select
 
 // Speed Counter
-volatile unsigned long time1, time2, timeDelta, timeDelta1, count;
+volatile unsigned long countVel, countDisp;
 
 unsigned long currentMillis;  // Used for storing the latest time
 unsigned long previousMillis = 0;      // Store the last time the program ran
@@ -69,7 +71,7 @@ void setup() {
   while (!Serial);
 
   // RPM counter
-  attachInterrupt(digitalPinToInterrupt(2), speedCount, RISING);       // interrupt programme when signal to pin 2 detected (0 = pin 2 and 1 = pin 2)
+  attachInterrupt(digitalPinToInterrupt(VEL.pin), speedCount, CHANGE);
 
   // Start NeoPixel
   FastLED.addLeds<NEOPIXEL, neoPin>(neoLeds, numLeds);
@@ -121,7 +123,7 @@ void setup() {
   Serial.println(" SD card initialized!");
   // Test Sd Card before continuing
   // Create header for files
-  sprintf(_header, "Time(ms),%s,%s,%s", TPS._name, AFR._name, TMP._name);
+  sprintf(_header, "Time(ms),%s,%s,%s,%s", TPS._name, AFR._name, TMP._name, VEL._name);
   // Print header for serial logging
   //Serial.println(_header);
   filename = "TEST.txt";
@@ -143,7 +145,7 @@ void setup() {
   delay(200);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("TPS:   %");
+  lcd.print("TPS:   % VEL:");
   lcd.setCursor(0, 1);
   lcd.print("AFR:     TMP:  C");
 }
@@ -222,42 +224,53 @@ void readFunc(void) {
 
 void displayFunc(void) {
   // Update display only if values have changed
-  // Display TPS Value
-  if (TPS.prev != TPS.raw) {
-    lcd.setCursor(4, 0);
-    if (TPS.value < 9.5) {
-      lcd.print(" ");
-      lcd.print(" ");
+    // Display TPS Value
+    if (TPS.prev != TPS.raw) {
+      lcd.setCursor(4, 0);
+      // Format for number of characters to be displayed
+      if (TPS.value < 9.5) {
+        lcd.print("  ");
+      }
+      else {
+        lcd.print(" ");
+      }
       lcd.print(TPS.value, 0);
     }
-    else if ((TPS.value >= 9.5) && (TPS.value < 100.0)) {
-      lcd.print(" ");
-      lcd.print(TPS.value, 0);
+    // Display AFR Value
+    if (AFR.prev != AFR.raw) {
+      lcd.setCursor(4, 1);
+      lcd.print(AFR.value, 1);
     }
-    else {
-      lcd.print(TPS.value, 0);
+    // Display TMP Value
+    if (TMP.prev != TMP.raw) {
+      lcd.setCursor(13, 1);
+      lcd.print(TMP.value, 0);
     }
-  }
-  // Display AFR Value
-  if (AFR.prev != AFR.raw) {
-    lcd.setCursor(4, 1);
-    lcd.print(AFR.value, 1);
-  }
-  // Display TMP Value
-  if (TMP.prev != TMP.raw) {
-    lcd.setCursor(13, 1);
-    lcd.print(TMP.value, 0);
-  }
-  if (pinState) {
-    if (filename != "") {
-      Serial.print("Closing file...");
-      dataFile.close();
-      filename = "";
-      Serial.println("file closed.");
-      lcd.setCursor(15, 0);
-      lcd.print(" ");
+    // Display Velocity
+    if (VEL.raw == 0){
+      lcd.setCursor(13, 0);
+      lcd.print("  0");
     }
-  };
+    else if (VEL.prev != VEL.raw) {
+      lcd.setCursor(13, 0);
+      if (VEL.value < 9.5) {
+        lcd.print("  ");
+      }
+      else {
+        lcd.print(" ");
+      }
+      lcd.print(VEL.value, 0);
+    }
+    if (pinState) {
+      if (filename != "") {
+        Serial.print("Closing file...");
+        dataFile.close();
+        filename = "";
+        Serial.println("file closed.");
+        lcd.setCursor(8, 0);
+        lcd.print(" ");
+      }
+    }
 }
 
 void createFunc(void) {
@@ -269,9 +282,9 @@ void createFunc(void) {
     Serial.println(" created!");
     dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open file
     dataFile.println(_header);
-    lcd.setCursor(15, 0);
-    lcd.print("R");
-  };
+    lcd.setCursor(8, 0);
+    lcd.print("~");
+  }
 }
 
 void writeFunc(void) {
@@ -283,7 +296,9 @@ void writeFunc(void) {
   dataFile.print(",");
   dataFile.print(AFR.raw);
   dataFile.print(",");
-  dataFile.println(TMP.raw);
+  dataFile.print(TMP.raw);
+  dataFile.print(",");
+  dataFile.println(VEL.raw);
   neoLeds[ledRecord].setRGB( 0, 0, 0);
   FastLED.show();
 }
@@ -308,38 +323,20 @@ void errorLed(void) {
   FastLED.show();
 }
 
-void speedCount(void)
-{
-  if (time1) {
-    time2 = micros();
-    timeDelta = time2 - time1;
-    time1 = time2;
-  }
-  else {
-    time1 = micros();
-  }
+void speedCount(void){
+  countVel++;
 }
 
 void speedFunc(void) {
-  /*
-     If the time has changed
-      update the time
-     else
-      dont do anything
-
-      if time2 - time1 > 100000
-        speed = 0
-  */
-  if (timeDelta != timeDelta1) {
-//    Serial.println(timeDelta);
-    timeDelta1 = timeDelta;
+  // Since the sample frequency is 20hz, 20 samples is 1 second.
+  if (countDisp > 20){
+    VEL.prev = VEL.raw;
+    VEL.raw = countVel;
+    VEL.value = ((VEL.raw * 60 * 60 * 3.14 * 2)/63360);
+    countVel = 0;
+    countDisp = 0; 
   }
-
-  if (timeDelta1 == timeDelta) {
-    count++;
-  }
-  if (count > 40) {
-//    Serial.println("0");
-    count = 0;
+  else {
+    countDisp++;
   }
 }
