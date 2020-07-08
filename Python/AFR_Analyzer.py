@@ -106,6 +106,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.afrPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.afrPlot.hideButtons()      #Disable auto-scale button
         self.afrPlot.setContentsMargins(0, 0, 0, 0)
+        self.afrPlot.hideAxis('bottom')
 
         # Generate tpsPlot
         self.tpsPlot = self.win.addPlot(row = 1, col = 0)
@@ -117,6 +118,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.tpsPlot.setXLink(self.afrPlot)
         self.tpsPlot.hideButtons()      #Disable auto-scale button
         self.tpsPlot.setContentsMargins(0, 0, 0, 0)
+        self.tpsPlot.hideAxis('bottom')
 
         # Generate the velocityPlot
         self.velocityPlot = self.win.addPlot(row = 2, col = 0)
@@ -128,6 +130,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.velocityPlot.setXLink(self.afrPlot)
         self.velocityPlot.hideButtons()      #Disable auto-scale button
         self.velocityPlot.setContentsMargins(0, 0, 0, 0)
+        self.velocityPlot.hideAxis('bottom')
 
         # Generate the rangePlot
         self.rangePlot = self.win.addPlot(row = 3, col = 0)
