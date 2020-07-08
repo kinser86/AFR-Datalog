@@ -9,7 +9,7 @@
 RTC_PCF8523 rtc;
 
 // Setup LCD
-LiquidCrystal_I2C lcd(0x27, 16, 2);   //16 characters wide by 2 characters tall
+LiquidCrystal_I2C lcd(0x27, 20, 4);   //20 characters wide by 4 characters tall
 
 // Setup NeoPixel
 #define numLeds 8   // Number of available LEDs
@@ -40,6 +40,8 @@ sample TMP = {"TMP", "Temperature", 8, 0, 0, 25.0};    //
 sample TPS = {"TPS", "Throttle Position", 9, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
 sample AFR = {"AFR", "Air-Fuel Ratio", 10, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
 sample VEL = {"VEL", "Velocity", 2, 0, 0, 0};
+
+bool updateDisplay;
 
 const int ledRecord = 7;  //LED
 const int ledRead =  0;   //LED
@@ -145,9 +147,9 @@ void setup() {
   delay(200);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("TPS:   % VEL:");
+  lcd.print("TPS:   %     VEL:");
   lcd.setCursor(0, 1);
-  lcd.print("AFR:     TMP:  C");
+  lcd.print("AFR:         TMP:  C");
 }
 
 void loop() {
@@ -187,6 +189,10 @@ void loop() {
 }
 
 void idleFunc() {
+  // if (updateDisplay){
+  //   displayFunc();
+  //   updateDisplay = false;
+  // }
   while ((millis() - previousMillis) < interval) {
     pinState = digitalRead(pinSwitch);
   }
@@ -220,6 +226,7 @@ void readFunc(void) {
 
   neoLeds[ledRead].setRGB( 0, 0, 0);
   FastLED.show();
+  // updateDisplay = true;
 }
 
 void displayFunc(void) {
@@ -236,6 +243,11 @@ void displayFunc(void) {
       }
       lcd.print(TPS.value, 0);
     }
+    // Display Velocity
+    if (VEL.raw == 0){
+      lcd.setCursor(17, 0);
+      lcd.print("  0");
+    }
     // Display AFR Value
     if (AFR.prev != AFR.raw) {
       lcd.setCursor(4, 1);
@@ -243,16 +255,11 @@ void displayFunc(void) {
     }
     // Display TMP Value
     if (TMP.prev != TMP.raw) {
-      lcd.setCursor(13, 1);
+      lcd.setCursor(17, 1);
       lcd.print(TMP.value, 0);
     }
-    // Display Velocity
-    if (VEL.raw == 0){
-      lcd.setCursor(13, 0);
-      lcd.print("  0");
-    }
     else if (VEL.prev != VEL.raw) {
-      lcd.setCursor(13, 0);
+      lcd.setCursor(17, 0);
       if (VEL.value < 9.5) {
         lcd.print("  ");
       }
@@ -267,7 +274,7 @@ void displayFunc(void) {
         dataFile.close();
         filename = "";
         Serial.println("file closed.");
-        lcd.setCursor(8, 0);
+        lcd.setCursor(10, 0);
         lcd.print(" ");
       }
     }
@@ -282,7 +289,7 @@ void createFunc(void) {
     Serial.println(" created!");
     dataFile = SD.open(filename, O_CREAT | O_APPEND | O_WRITE);     // Open file
     dataFile.println(_header);
-    lcd.setCursor(8, 0);
+    lcd.setCursor(10, 0);
     lcd.print("~");
   }
 }
