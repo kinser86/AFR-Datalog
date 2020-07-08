@@ -101,8 +101,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.afrPlot = self.win.addPlot(row = 0, col = 0)
         # Format afrPlot
         self.afrPlot.setLabel('left', 'Air-Fuel Ratio')
-        self.afrPlot.setRange(yRange = [10, 20], padding = 0.1)
-        self.afrPlot.setLimits(yMin = 10, yMax = 20)
+        self.afrPlot.setRange(yRange = [10-.25, 20+.25], padding = 0.1)
+        self.afrPlot.setLimits(yMin = 10-.25, yMax = 20+.25)
         self.afrPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.afrPlot.hideButtons()      #Disable auto-scale button
         self.afrPlot.setContentsMargins(0, 0, 0, 0)
@@ -112,8 +112,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.tpsPlot = self.win.addPlot(row = 1, col = 0)
         # Format tpsPlot
         self.tpsPlot.setLabel('left', 'Throttle (%)')
-        self.tpsPlot.setRange(yRange = [0, 100], padding = 0.1)
-        self.tpsPlot.setLimits(yMin = 0, yMax = 100)
+        self.tpsPlot.setRange(yRange = [0-2.5, 100+2.5], padding = 0.1)
+        self.tpsPlot.setLimits(yMin = 0-2.5, yMax = 100+2.5)
         self.tpsPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.tpsPlot.setXLink(self.afrPlot)
         self.tpsPlot.hideButtons()      #Disable auto-scale button
@@ -124,8 +124,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.velocityPlot = self.win.addPlot(row = 2, col = 0)
         # Format velocityPlot
         self.velocityPlot.setLabel('left', 'Velocity (MpH)')
-        self.velocityPlot.setRange(yRange = [0, 100], padding = 0.1)
-        self.velocityPlot.setLimits(yMin = 0, yMax = 100)
+        self.velocityPlot.setRange(yRange = [0-2.5, 100+2.5], padding = 0.1)
+        self.velocityPlot.setLimits(yMin = 0-2.5, yMax = 100+2.5)
         self.velocityPlot.showGrid(x = True, y = True, alpha = 0.3)
         self.velocityPlot.setXLink(self.afrPlot)
         self.velocityPlot.hideButtons()      #Disable auto-scale button
@@ -136,8 +136,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.rangePlot = self.win.addPlot(row = 3, col = 0)
         # Format rangePlot
         self.rangePlot.setLabel('left', 'Dataset')
-        self.rangePlot.setRange(yRange = [10, 20], padding = 0.1)
-        self.rangePlot.setLimits(yMin = 10, yMax = 20)
+        self.rangePlot.setRange(yRange = [10-.25, 20+.25], padding = 0.1)
+        self.rangePlot.setLimits(yMin = 10-.25, yMax = 20+.25)
         self.rangePlot.showGrid(x = True, y = True, alpha = 0.3)
         self.rangePlot.hideButtons()      #Disable auto-scale button
         self.rangePlot.setContentsMargins(0, 0, 0, 0)
@@ -267,7 +267,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
             next(file)
             for row in plots:
                 #print(row)
-                x.append(int(row[0]))
+                x.append(int(row[0])/1000)
                 yTps.append(int(row[1]) * (100.0 / 1023.0))
                 yAfr.append((int(row[2]) * (10.0 / 1023.0)) + 10.0)
                 tmpC.append((((int(row[3]) * 5.0) / 1024.0) - 0.5) * 100)
