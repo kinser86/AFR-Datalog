@@ -13,18 +13,17 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);   //20 characters wide by 4 characters tall
 
 // Setup NeoPixel
 #define numLeds 8   // Number of available LEDs
-#define neoPin 24   // Digital Pin Output
-
+#define neoPin 22   // Digital Pin Output
 CRGB neoLeds[numLeds];
 
+// Setup State Machines
 enum state {
   _idleState,   // Wait for overflow
   _readState,   // Read analog values
   _logState,    // Write data to file
   _errorState   // Stop the program if something is wrong
 };
-
-state _currentState;
+state _currentState;  // Initial state
 
 // Declare Variables
 struct sample {
@@ -36,10 +35,12 @@ struct sample {
   float value;        // Calculated value
 };
 
-sample TMP = {"TMP", "Temperature", 8, 0, 0, 25.0};    //
-sample TPS = {"TPS", "Throttle Position", 9, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
-sample AFR = {"AFR", "Air-Fuel Ratio", 10, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
-sample VEL = {"VEL", "Velocity", 2, 0, 0, 0};
+sample AFR = {"AFR", "Air-Fuel Ratio", 0, 0, 0, 14.7};   // Voltage range 0.0 - 5.0 VDC
+sample TPS = {"TPS", "Throttle Position", 1, 0, 0, 100.0};   // Voltage range 0.5 - 4.5 VDC
+sample TMP = {"TMP", "Temperature", 2, 0, 0, 25.0};    //
+sample VEL = {"VEL", "Velocity", 24, 0, 0, 0};
+
+// #define aref_voltage 3.3  // Used for TMP36 Sensor
 
 bool updateDisplay;
 
@@ -47,7 +48,7 @@ const int ledRecord = 7;  //LED
 const int ledRead =  0;   //LED
 const int ledError = 1;   //LED
 
-const int pinSwitch = 7;
+const int pinSwitch = 24;
 const int pinSD = 10;   // Sd-Card Chip Select
 
 // Speed Counter
@@ -87,6 +88,7 @@ void setup() {
   lcd.print("Init");
   // Define digital IO
   pinMode(pinSwitch, INPUT_PULLUP);
+  // analogReference(EXTERNAL);
   lcd.print(".");
   neoLeds[0].setRGB( 50, 0, 0);
   FastLED.show();
@@ -157,25 +159,20 @@ void loop() {
 
     case _idleState:
       _currentState = _idleState;
-      //      stateFunc();
       idleFunc();
       break;
 
     case _readState:
       _currentState = _readState;
-      //      stateFunc();
       readFunc();
       speedFunc();
-      displayFunc();
       _currentState = _idleState;
       break;
 
     case _logState:
       _currentState = _logState;
-      //      stateFunc();
       readFunc();
       speedFunc();
-      displayFunc();
       createFunc();
       writeFunc();
       _currentState = _idleState;
@@ -183,17 +180,16 @@ void loop() {
 
     case _errorState:
       _currentState = _errorState;
-      //      stateFunc();
       errorFunc();
   }
 }
 
 void idleFunc() {
-  // if (updateDisplay){
-  //   displayFunc();
-  //   updateDisplay = false;
-  // }
   while ((millis() - previousMillis) < interval) {
+    if (updateDisplay){
+      displayFunc();
+    }
+    closeFunc();
     pinState = digitalRead(pinSwitch);
   }
   previousMillis += interval;   // Makes a constant sample!
@@ -217,8 +213,9 @@ void readFunc(void) {
   AFR.raw = analogRead(AFR.pin);
   TMP.raw = analogRead(TMP.pin);
   // Calculate Values
-  TPS.value = (TPS.raw * (100 / 1023.0));    // TPS ADC
-  AFR.value = (AFR.raw * (10.0 / 1023.0)) + 10.0;  // AFR ADC
+  TPS.value = (TPS.raw * (100 / 1024.0));    // TPS ADC
+  AFR.value = (AFR.raw * (10.0 / 1024.0)) + 10.0;  // AFR ADC
+  // TMP.value = (((TMP.raw * aref_voltage) / 1024.0) - 0.5) * 100;
   TMP.value = (((TMP.raw * 5.0) / 1024.0) - 0.5) * 100;
 
   //TPS.value = (TPS.raw * (4.0 / 1023.0)) + 0.5;;    // Voltage (VDC)
@@ -226,7 +223,7 @@ void readFunc(void) {
 
   neoLeds[ledRead].setRGB( 0, 0, 0);
   FastLED.show();
-  // updateDisplay = true;
+  updateDisplay = true;
 }
 
 void displayFunc(void) {
@@ -238,7 +235,7 @@ void displayFunc(void) {
       if (TPS.value < 9.5) {
         lcd.print("  ");
       }
-      else {
+      else if ((TPS.value >= 9.5) && (TPS.value < 100.0)){
         lcd.print(" ");
       }
       lcd.print(TPS.value, 0);
@@ -268,16 +265,7 @@ void displayFunc(void) {
       }
       lcd.print(VEL.value, 0);
     }
-    if (pinState) {
-      if (filename != "") {
-        Serial.print("Closing file...");
-        dataFile.close();
-        filename = "";
-        Serial.println("file closed.");
-        lcd.setCursor(10, 0);
-        lcd.print(" ");
-      }
-    }
+    updateDisplay = false;
 }
 
 void createFunc(void) {
@@ -308,6 +296,19 @@ void writeFunc(void) {
   dataFile.println(VEL.raw);
   neoLeds[ledRecord].setRGB( 0, 0, 0);
   FastLED.show();
+}
+
+void closeFunc(void){
+  if (pinState) {
+    if (filename != "") {
+      Serial.print("Closing file...");
+      dataFile.close();
+      filename = "";
+      Serial.println("file closed.");
+      lcd.setCursor(10, 0);
+      lcd.print(" ");
+    }
+  }
 }
 
 void errorFunc(void) {
