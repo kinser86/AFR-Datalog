@@ -235,7 +235,7 @@ void displayFunc(void) {
       if (TPS.value < 9.5) {
         lcd.print("  ");
       }
-      else if ((TPS.value >= 9.5) && (TPS.value < 100.0)){
+      else if ((TPS.value >= 9.5) && (TPS.value < 99.5)){
         lcd.print(" ");
       }
       lcd.print(TPS.value, 0);
