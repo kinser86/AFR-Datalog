@@ -267,7 +267,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
             next(file)
             for row in plots:
                 #print(row)
-                x.append(int(row[0])/1000)
+                x.append(int(row[0]))
                 yTps.append(int(row[1]) * (100.0 / 1023.0))
                 yAfr.append((int(row[2]) * (10.0 / 1023.0)) + 10.0)
                 tmpC.append((((int(row[3]) * 5.0) / 1024.0) - 0.5) * 100)
@@ -325,7 +325,6 @@ class Ui_MainWindow(QtGui.QMainWindow):
             xMax = len(timeDelta)-1,
             yMin = 0)
         self.deltaPlot.showGrid(x = True, y = True, alpha = 0.3)
-        ax = self.deltaPlot.getAxis('left')
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
